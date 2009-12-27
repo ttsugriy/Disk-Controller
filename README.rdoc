@@ -1,0 +1,53 @@
+= Disk Controller
+
+Disk controller for {emulated disk}[http://www.ics.uci.edu/~bic/os/additional_exercises.htm] (written by Simon Evens as an undergraduate project, later modified by Lubomir Bic) written in C. Consists of following files:
+
+* student.c
+* student.h
+
+== Install
+
+Just download files from repository.
+
+== Build
+
+    make
+
+== Run
+
+    ./student
+
+== Usage
+
+There are following things you can do:
+
+* read block from disk
+* wright block to disk
+
+After having chosen the action you must provide needed information:
+
+* block index
+* information you want to write (must be less than the size of block) for WRITE action
+
+After successful READ operation you must see the content of the selected block
+
+== Copyright
+
+controller.c, internals.h, interface.h were developed by Simon Evens as an undergraduate project and were later modified by Lubomir Bic and as such are controlled by their termes of usage. {More information.}[http://www.ics.uci.edu/~bic/os/145B/Disk-Project/CODE/instructor.html]
+
+Copyright (C) 2009 Taras Tsugriy
+
+== LICENSE
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
