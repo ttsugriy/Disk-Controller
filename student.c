@@ -86,9 +86,9 @@ int main(int argc, char* argv) {
             no_cyl, no_surf, no_sect, sect_len, disk_cont);
     init_disk(no_cyl, no_surf, no_sect, sect_len, disk_cont);
     int op, block;
-    char* input = malloc(sizeof(char) * sect_len);
     while ( 1 ) {
         printf("Choose operation (READ(%d), WRITE(%d), QUIT(9)): ", READ, WRITE);
+        char* input = malloc(sizeof(char) * sect_len);
         scanf("%d", &op);
         if (op != READ && op != WRITE)
             break;
