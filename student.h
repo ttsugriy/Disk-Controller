@@ -22,6 +22,7 @@
 #define no_sect 10
 #define sect_len 10
 #define disk_cont "disk_cont.dat"
+#define USE_DMA
 
 struct disk_addr {
     long long cyl;
@@ -35,3 +36,4 @@ void block_to_addr(int i, struct disk_addr* addr, int* status);
 void seek_addr(struct disk_addr* addr);
 int check_status( void );
 void block_op(int op, int i, char* p);
+void _wait_intrpt();

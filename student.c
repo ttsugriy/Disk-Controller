@@ -36,6 +36,16 @@ void block_to_addr(int i, struct disk_addr * addr, int* status) {
     *status = OK;
 }
 
+void _wait_intrpt() {
+#ifdef USE_DMA
+    await_intrpt();
+#else
+    do {
+        busy = read_reg( BUSY );
+    } while (busy);
+#endif
+}
+
 void block_op (int op, int i, char* p) {
     struct disk_addr addr;
     int status;
@@ -49,7 +59,7 @@ void block_op (int op, int i, char* p) {
         if ( write_mem_reg( p ) == UNINIT )
             return;
         write_int_reg ( OP, op );
-        await_intrpt();
+        _wait_intrpt();
         status = check_status();
     } while (status);
 }
@@ -67,7 +77,7 @@ void seek_addr( struct disk_addr* addr) {
     do {
         write_int_reg( CYL, addr->cyl );
         write_int_reg( OP, SEEK );
-        await_intrpt();
+        _wait_intrpt();
         status = check_status();
     } while (status);
 }
