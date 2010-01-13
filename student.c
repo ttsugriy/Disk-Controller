@@ -40,36 +40,41 @@ void _wait_intrpt() {
 #ifdef USE_DMA
     await_intrpt();
 #else
+    int busy;
     do {
         busy = read_reg( BUSY );
     } while (busy);
 #endif
 }
 
-void block_op (int op, int i, char* p) {
+int block_op (int op, int i, char* p) {
     struct disk_addr addr;
     int status;
     do {
         block_to_addr( i, &addr, &status );
         if (status)
-            return;
+            break;
         seek_addr( &addr );
         write_int_reg ( SURF, addr.surf );
         write_int_reg ( SECT, addr.sect );
         if ( write_mem_reg( p ) == UNINIT )
-            return;
+            return UNINIT;
         write_int_reg ( OP, op );
         _wait_intrpt();
         status = check_status();
+#ifdef DEBUG
+        printf("Done %d op with status %d\n", op, status);
+#endif
     } while (status);
+    return status;
 }
 
-void read_block(int i, char* p) {
-    block_op( READ, i, p );
+int read_block(int i, char* p) {
+    return block_op( READ, i, p );
 }
 
-void write_block(int i, char* p) {
-    block_op( WRITE, i, p );
+int write_block(int i, char* p) {
+    return block_op( WRITE, i, p );
 }
 
 void seek_addr( struct disk_addr* addr) {
@@ -91,26 +96,81 @@ int check_status( void ) {
    return read_reg( STAT );
 }
 
-int main(int argc, char* argv) {
-    printf("Initalizing disk with following values:\n\tno_cyl=%d, no_surf=%d, no_sect=%d, sect_len=%d, disk_cont=%s\n",
-            no_cyl, no_surf, no_sect, sect_len, disk_cont);
-    init_disk(no_cyl, no_surf, no_sect, sect_len, disk_cont);
-    int op, block;
-    while ( 1 ) {
-        printf("Choose operation (READ(%d), WRITE(%d), QUIT(9)): ", READ, WRITE);
-        char* input = malloc(sizeof(char) * sect_len);
-        scanf("%d", &op);
-        if (op != READ && op != WRITE)
-            break;
-        printf("Input block number: ");
-        scanf("%d", &block);
-        if (op == WRITE) {
-            printf("Input content(no more than %d chars: ", sect_len);
-            scanf("%s", input);
+int write_text( int fblock, char* text ) {
+    int text_len = strlen(text);
+    int blck_num = text_len / sect_len;
+    int i, j;
+    int written = 0;
+    char* part = malloc(sizeof(char) * sect_len);
+    for (i = 0; i < blck_num; i++) {
+        for (j = 0; j < sect_len; j++) {
+            if (i * sect_len + j > text_len)
+                break;
+            part[j] = text[i * sect_len + j];
+            written++;
         }
-        block_op( op, block, input );
-        if (op == READ)
-            printf("Content under %dth block: %s\n", block, input);
+        write_block( fblock + i, part );
+#ifdef DEBUG
+        printf("Writing '%s' to the %dth block\n", part, fblock + i);
+#endif
+    }
+    return written;
+}
+
+void process_read(char* content) {
+    int index = ask_for_block_idx();
+    read_block( index, content );
+    printf("Read '%s' from block #%d\n", content, index);
+}
+
+void process_write(char* content) {
+    int index = ask_for_block_idx();
+    ask_for_content( content );
+    write_block( index, content );
+    printf("Wrote '%s' to block #%d\n", content, index);
+}
+
+int ask_for_content( char* buffer ) {
+    printf("Input content: ");
+    scanf("%s", buffer);
+}
+
+int ask_for_block_idx( void ) {
+    int index;
+    printf("Input block index: ");
+    scanf("%d", &index);
+    return index;
+}
+
+int main(int argc, char* argv) {
+    printf("Initalizing disk with following values:" 
+            "\n\tno_cyl=%d, no_surf=%d, no_sect=%d, sect_len=%d, disk_cont=%s\n",
+            no_cyl, no_surf, no_sect, sect_len, disk_cont);
+    if (init_disk(no_cyl, no_surf, no_sect, sect_len, disk_cont) != OK) {
+        printf("One of the initialization parameters is invalid."
+                "Please try again providing correct one\n");
+        return -1;
+    }
+    int op, block;
+    int max_symbs = sect_len * no_sect * no_surf * no_cyl;
+    char* input;
+    while ( 1 ) {
+        printf("Choose block operation: READ(%d), WRITE(%d) or WRITE TEXT(%d). QUIT(9)): ",
+                READ, WRITE, WRITE_TEXT);
+        scanf("%d", &op);
+        int symsToWrite = op == WRITE ? max_symbs : sect_len;
+        input = malloc(sizeof(char) * symsToWrite);
+        switch ( op ) {
+            case READ:
+                process_read(input);
+                break;
+            case WRITE:
+                process_write(input);
+                break;
+            default:
+                printf("Leaving program...\n");
+                return 0;
+        }
     }
     save_disk(disk_cont);
     return 0;
